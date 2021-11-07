@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/SignUpForm.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/SignUpForm.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import styled from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faKey,
+  faUser,
+  faAddressBook,
+} from '@fortawesome/free-solid-svg-icons';
+import React, { useState, useEffect } from 'react';
+import Router from 'next/router';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+
+/**
+ * Component for the form allowing the user to sign up.
+ * @returns HTML for the sign up form styled with styled-components
+ */
+const SignUpForm = () => {
+  //object to track current User
+  const [currentUser, setCurrentUser] = useState('');
+  //redirect to retro a user is authenticated
+  useEffect(() => {
+    if (currentUser) Router.replace('/retros');
+  }, [currentUser]);
+
+  const registerUser = async (values) => {
+    //build JSON data to Post to DB
+    const body = {
+      email: values.email,
+      name: values.name,
+      password: values.password,
+    };
+
+    //Send to sign up api
+    console.log('Body from SignUpForm.js : ' + JSON.stringify(body));
+    const res = await fetch('/api/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    //check for success and set current user
+    if (res.status === 201) {
+      const userObj = await res.json();
+      setCurrentUser(userObj);
+      //handle unsuccessful response
+    } else {
+      const error = await res.text();
+      console.log(error);
+    }
+  };
+
+  /**
+   * Formik Hook to declare initial values, validation criteria and submission action
+   */
+  const formik = useFormik({
+    initialValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+    onSubmit: (values) => {
+      registerUser(values);
+      console.log(values);
+    },
+    validationSchema: Yup.object({
+      name: Yup.string().required('Required'),
+      email: Yup.string()
+        .matches(
+          /^([a-z0-9]+(?:[._-][a-z0-9]+)*)@(and.digital)+$/,
+          'Please use your @and.digital email to sign in'
+        )
+        .email('Please use your @and.digital email to sign in')
+        .required('Required'),
+      password: Yup.string()
+        .matches(
+          /^((?=\S*?[A-Z])(?=\S*?[a-z])(?=\S*?[0-9])(?=(?:.*[!@#$%^&amp;*?()\-_=+{};:,&lt;.>]){1,}).{8,})\S$/,
+          'Password must contain a minimum of 8 characters, at 1 number, 1 special character, 1 upper case and 1 lower case.'
+        )
+        .required('Required'),
+      confirmPassword: Yup.string()
+        .oneOf([Yup.ref('password')], 'Both password need to be the same')
+        .required('Required'),
+    }),
+    validateOnChange: false,
+    validateOnBlur: false,
+  });
+
+  return (
+    &lt;>
+      &lt;StyleHeader> Sign Up. &lt;/StyleHeader>
+      &lt;form
+        onSubmit={(e) => {
+          e.preventDefault();
+          formik.handleSubmit();
+        }}
+      >
+        &lt;FontAwesomeIcon icon={faUser} size='2x' />
+        &lt;StyleInputName
+          id='name'
+          type='text'
+          name='name'
+          placeholder='Full name'
+          error={formik.errors.name}
+          {...formik.getFieldProps('name')}
+        />
+        &lt;br />
+        &lt;ErrorMessage>
+          {formik.errors.name &amp;&amp; (
+            &lt;div>{formik.errors.name}&lt;/div>
+          )}
+        &lt;/ErrorMessage>
+        &lt;br />
+        &lt;FontAwesomeIcon icon={faAddressBook} size='2x' />
+        &lt;StyleInputEmail
+          id='email'
+          type='text'
+          name='email'
+          placeholder='Email address'
+          error={formik.errors.email}
+          {...formik.getFieldProps('email')}
+        />
+        &lt;br />
+        &lt;ErrorMessage>
+          {formik.errors.email &amp;&amp; (
+            &lt;div>{formik.errors.email}&lt;/div>
+          )}
+        &lt;/ErrorMessage>
+        &lt;br />
+        &lt;FontAwesomeIcon icon={faKey} size='2x' />
+        &lt;StyleInputCreatePassword
+          id='createPassword'
+          type='password'
+          name='password'
+          placeholder='Create new password'
+          error={formik.errors.password}
+          {...formik.getFieldProps('password')}
+        />
+        &lt;br />
+        &lt;ErrorMessage>
+          {formik.errors.password &amp;&amp; (
+            &lt;div>{formik.errors.password}&lt;/div>
+          )}
+        &lt;/ErrorMessage>
+        &lt;br />
+        &lt;FontAwesomeIcon icon={faKey} size='2x' />
+        &lt;StyleInputConfirmPassword
+          id='confirmPassword'
+          type='password'
+          name='confirmPassword'
+          placeholder='Confirm password'
+          error={formik.errors.confirmPassword}
+          {...formik.getFieldProps('confirmPassword')}
+        />
+        &lt;br />
+        &lt;ErrorMessage>
+          {formik.errors.confirmPassword &amp;&amp; (
+            &lt;div>{formik.errors.confirmPassword}&lt;/div>
+          )}
+        &lt;/ErrorMessage>
+        &lt;br />
+        &lt;StyledButton type='submit'>Sign Up&lt;/StyledButton>
+      &lt;/form>
+    &lt;/>
+  );
+};
+
+export default SignUpForm;
+
+/**
+ * Styling for Login form component elements - Sign Up Button
+ */
+const StyledButton = styled.button`
+  background-color: #ff323c;
+  border-radius: 5px;
+  padding-left: 3px;
+  padding-right: 3px;
+  font-size: 16px;
+  color: white;
+  height: 3rem;
+  width: 7rem;
+  margin-left: 37px;
+  @media (max-width: 450px) {
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
+/**
+ * Styling for Login form component elements - Email
+ */
+const StyleInputEmail = styled.input`
+  border: ${({error}) => error ? "1px solid #FF0000" : "1px solid black"};
+  margin-left: 10px;
+  margin-bottom: 10px;
+  height: 3rem;
+  width: 22rem;
+  ::placeholder,
+  ::-webkit-input-placeholder {
+    padding-left: 10px;
+  }
+  :-ms-input-placeholder {
+    padding-left: 10px;
+  }
+  @media (max-width: 450px) {
+    width: 19rem;
+  }
+`;
+
+/**
+ * Styling for Login form component elements - Password
+ */
+const StyleInputCreatePassword = styled.input`
+border: ${({error}) => error ? "1px solid #FF0000" : "1px solid black"};
+margin-bottom: 10px;
+  margin-left: 7px;
+  height: 3rem;
+  width: 22rem;
+  ::placeholder,
+  ::-webkit-input-placeholder {
+    padding-left: 10px;
+  }
+  :-ms-input-placeholder {
+    padding-left: 10px;
+  }
+  @media (max-width: 450px) {
+    width: 19rem;
+  }
+`;
+
+/**
+ * Styling for Login form component elements - Password
+ */
+const StyleInputConfirmPassword = styled.input`
+border: ${({error}) => error ? "1px solid #FF0000" : "1px solid black"};
+margin-bottom: 10px;
+  height: 3rem;
+  margin-left: 7px;
+  width: 22rem;
+  ::placeholder,
+  ::-webkit-input-placeholder {
+    padding-left: 10px;
+  }
+  :-ms-input-placeholder {
+    padding-left: 10px;
+  }
+  @media (max-width: 450px) {
+    width: 19rem;
+  }
+`;
+
+/**
+ * Styling for Login form component elements - Input name
+ */
+const StyleInputName = styled.input`
+  margin-left: 9px;
+  border: ${({error}) => error ? "1px solid #FF0000" : "1px solid black"};
+  margin-bottom: 10px;
+  height: 3rem;
+  width: 22rem;
+  ::placeholder,
+  ::-webkit-input-placeholder {
+    padding-left: 10px;
+  }
+  :-ms-input-placeholder {
+    padding-left: 10px;
+  }
+  @media (max-width: 450px) {
+    width: 19rem;
+  }
+`;
+
+/**
+ * Styling for Login form component elements - Header
+ */
+const StyleHeader = styled.h1`
+  font-size: 35px;
+  margin-bottom: 35px;
+  margin-left: 30px;
+`;
+
+/**
+ * Styling for Login form component elements - Error message
+ */
+const ErrorMessage = styled.div`
+  color: red;
+  margin-left: 2.8em;
+  height: 1em;
+  font-style: italic;
+  font-size: 0.9em;
+`;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#ErrorMessage">ErrorMessage</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#LoginForm">LoginForm</a></li><li><a href="global.html#Logo">Logo</a></li><li><a href="global.html#RegisterUser">Register User</a></li><li><a href="global.html#retroSchema">retroSchema</a></li><li><a href="global.html#RetrospectiveHandler">Retrospective Handler</a></li><li><a href="global.html#SignUpForm">SignUpForm</a></li><li><a href="global.html#StyledButton">StyledButton</a></li><li><a href="global.html#StyleHeader">StyleHeader</a></li><li><a href="global.html#StyleInputConfirmPassword">StyleInputConfirmPassword</a></li><li><a href="global.html#StyleInputCreatePassword">StyleInputCreatePassword</a></li><li><a href="global.html#StyleInputEmail">StyleInputEmail</a></li><li><a href="global.html#StyleInputName">StyleInputName</a></li><li><a href="global.html#StyleInputPassword">StyleInputPassword</a></li><li><a href="global.html#userSchema">userSchema</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Tue Jul 13 2021 13:39:43 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
